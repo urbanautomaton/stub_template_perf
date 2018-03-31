@@ -1,24 +1,47 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A small repro for a performance issue with `rspec-rails`'
+`#stub_template` helper, addressed by caching the
+`ActionView::FixtureResolver` instances created to support the stubs.
 
-Things you may want to cover:
+```erb
+<%# app/views/repro.html.erb %>
+<%= render partial: 'some_partial' %>
+```
 
-* Ruby version
+```ruby
+# spec/views/repro.html.erb_spec.rb
+require 'rails_helper'
 
-* System dependencies
+RSpec.describe 'repro.html.erb' do
+  before do
+    stub_template('_some_partial.html.erb' => 'some-contents')
+  end
 
-* Configuration
+  5_000.times do |i|
+    context "Example group #{i} to cause expensive finalization" do
+      it 'stubs the partial' do
+        render
 
-* Database creation
+        expect(rendered).to include('some-contents')
+      end
+    end
+  end
+end
+```
 
-* Database initialization
+```
+$ rspec spec/views/repro.html.erb_spec.rb
+..... [many examples snipped] ....
 
-* How to run the test suite
+Finished in 3 minutes 57 seconds (files took 8.83 seconds to load)
+5000 examples, 0 failures
+```
 
-* Services (job queues, cache servers, search engines, etc.)
+```
+$ CACHE_RESOLVERS=true rspec spec/views/repro.html.erb_spec.rb
+..... [many examples snipped] ....
 
-* Deployment instructions
-
-* ...
+Finished in 13.12 seconds (files took 8.35 seconds to load)
+5000 examples, 0 failures
+```
