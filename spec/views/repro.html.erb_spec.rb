@@ -1,17 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe 'repro.html.erb' do
-  before do
-    stub_template('_some_partial.html.erb' => 'some-contents')
-  end
+(1..1000).each do |i|
+  RSpec.describe "many/#{i}.html.erb" do
+    it 'renders the template' do
+      render
 
-  5_000.times do |i|
-    context "Example group #{i} to cause expensive finalization" do
-      it 'stubs the partial' do
-        render
-
-        expect(rendered).to include('some-contents')
-      end
+      expect(rendered).to include("some-contents-#{i}")
     end
   end
 end
